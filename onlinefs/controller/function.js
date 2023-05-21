@@ -7,8 +7,15 @@ const fsoperate = require("../module/fsoperate");
 const fs = require("fs-extra");
 const os = require("os");
 
-const keyManager = require("../../helper/KeyManager");
-const apiResponse = require("../../helper/ApiResponse");
+const fsnative = require("fs");
+const fsrename = (src, target, errCallbackFn) => {
+    fsnative.rename(src, target, (e) => {
+        if (e instanceof Error)
+            fs.move(src, target, errCallbackFn);
+    });
+};
+
+const permission = require("../../helper/Permission");
 
 router.post("/mkdir", (req, res) => {
   let name = parseHandle(req.body, "string");
@@ -146,12 +153,13 @@ router.get("/eac_quque", (req, res) => {
 const multer = require("multer");
 const upload = multer({ dest: "tmp_upload/" });
 router.post("/upload", upload.single("upload_file"), (req, res) => {
-  //权限判断,需要登录
+  //权限判断, 要求请求了在线文件访问的临时权限 
   if (!req.session.fsos || !req.session.fsos.cwd) return;
   
   //仅管理员可以使用上传文件
-  if (!keyManager.isMaster(apiResponse.key(req))) {
-    apiResponse.forbidden(res);
+  if (permission.IsSessionMaster(req, res)) {
+  } else {
+    res.status(403).send("无访问权限");
     return;
   }
   
@@ -162,19 +170,23 @@ router.post("/upload", upload.single("upload_file"), (req, res) => {
     target_path = fileOperate.normalizePath(req.session.fsos.cwd); //获取绝对路径
     if (!fileOperate.isPathAccess(target_path)) return;
   } catch (err) {
-    res.status(500).send("服务器上传初始化错误!请重试!");
+    res.status(500).send("上传初始化错误");
   }
   if (req.file) {
     const originalname = req.file.originalname;
     const dstPath = pathm.join(target_path, originalname);
-    fs.move(req.file.path, dstPath, (err) => {
+    fsrename(req.file.path, dstPath, (err) => {
       if (err) {
-        res.status(500).send("上传虽然成功，但是处理文件出错: " + err);
+        console.log(err);
+        res.status(500).send("文件处理时发生错误");
       } else {
+    console.log("成功");
         res.send("Done");
       }
       fs.remove(req.file.path, () => {});
     });
+  } else {
+    res.status(400).send("无文件");
   }
 });
 
