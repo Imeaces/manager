@@ -7,6 +7,9 @@ const fsoperate = require("../module/fsoperate");
 const fs = require("fs-extra");
 const os = require("os");
 
+const keyManager = require("../../helper/KeyManager");
+const apiResponse = require("../../helper/ApiResponse");
+
 router.post("/mkdir", (req, res) => {
   let name = parseHandle(req.body, "string");
   if (name == "") return;
@@ -145,6 +148,13 @@ const upload = multer({ dest: "tmp_upload/" });
 router.post("/upload", upload.single("upload_file"), (req, res) => {
   //权限判断,需要登录
   if (!req.session.fsos || !req.session.fsos.cwd) return;
+  
+  //仅管理员可以使用上传文件
+  if (!keyManager.isMaster(apiResponse.key(req))) {
+    apiResponse.forbidden(res);
+    return;
+  }
+  
   let fileOperate;
   let target_path;
   try {
