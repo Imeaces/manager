@@ -21,29 +21,19 @@
  * 历史遗留:
  * 此程序源代码经历了 2013 年到 2021 年，代码中会有一些古老的语法与实现方式。
  * 某些地方如果您不知道为何这样写，那么切勿改动。
- *
- *
- * Google translate:
- * The code you see now is the MCSManager 8.X version code, which is already a backward version.
- * You can check the latest version here: https://github.com/Suwings/MCSManager
- * But this does not mean that this code is worthless, it still has basic functions.
- * However, this code will no longer be updated and maintained, even if vulnerabilities are found, even if there are serious bugs and defects, it will no longer be repaired.
- * Its mission has been completed. Now, you can squeeze its remaining value in order to better serve you.
- * Or, serve the next one, until Minecraft disappears, the computer is updated and the human civilization ends, it may still exist.
- *
- * Released under the MIT open source agreement:
- * The source code of this software and related documents are free to everyone and can be disposed of at will, including use, copy, modify, merge, publish, distribute, sublicense, or sell.
- * The only restriction is that the software must contain copyright notices and license hints.
- *
- * Only applicable to the Chinese market:
- * There is no English version of this program, and only Chinese version.
- *
- * Historical legacy:
- * The source code of this program has gone through from 2013 to 2021, and there will be some ancient syntax and implementation methods in the code.
- * In some places, if you don't know why it is written this CODE, please don't change it.
- * ==================================
+ */
+ 
+/*
+ * @Silvigarabis 表示我看不懂，但我大受震撼
+ * 最近不知道干什么，就想开个服务器
+ * 然后得弄个面板方便管理
+ * 我就把这个非常简单的面板翻出来了
+ * 不过我也是懂一点js的人了，这不得改改符合我的想法？
  */
 
+// 算是个彩蛋？不过也太明显了吧
+// 如果参数里包含“--mcsm8”就打印旧版logo，然后程序爆炸
+if (Array.from(process.argv).includes("--mcsm8")){
 // 软件终端图标输出
 console.log(`______  _______________________  ___                                         
 ___   |/  /_  ____/_  ___/__   |/  /_____ _____________ _______ _____________
@@ -54,33 +44,41 @@ _  /  / / / /___  ____/ /_  /  / / / /_/ /_  / / / /_/ /_  /_/ //  __/  /
  + Copyright Suwings All rights reserved.
  + Version 8.7 Final Edition
 `);
+throw new (class MCSM8FinalVersionError extends Error { constructor(){ super("MCSM8已经没了"); } })();
+} 
+
+console.log("manager for Imeaces");
 
 // 运行时环境检测
 try {
-  let versionNum = parseInt(process.version.replace(/v/gim, "").split(".")[0]);
+  let nodejsMajorVersion = parseInt(process.version.match(/\d+/)[0]);
+  console.log(`当前正在使用的NODEJS主版本号为: ${nodejsMajorVersion}`);
   // 尽管我们建议最低版本为 v10 版本
-  if (versionNum < 10) {
+  if (nodejsMajorVersion < 10) {
     console.log("[ WARN ] 您的 Node 运行环境版本似乎低于我们要求的版本.");
     console.log("[ WARN ] 可能会出现未知情况,建议您更新 Node 版本 (>=10.0.0)");
   }
-} catch (err) {
+} catch {
   // 忽略任何版本检测导致的错误
+  console.log("无法确定当前使用的NODEJS版本");
 }
 
+const IMCMAN = require("./core/variable").IMCMAN;
 // 全局变量 MCSERVER
-global.MCSERVER = {};
+const MCSERVER = IMCMAN;
+global.MCSERVER = MCSERVER;
 
-// 测试时检测
-MCSERVER.allError = 0;
+process.exit();
+
 // 自动化部署测试
+//#看上去是一个非常直接的测试，尽管我进行了简单的修改，但还是觉得太简单粗暴了
+if (Array.from(process.argv).includes("--test"))
 setTimeout(() => {
-  let arg2 = process.argv[2] || "";
-  if (arg2 == "--test") {
-    MCSERVER.infoLog("Test", "测试过程结束...");
-    if (MCSERVER.allError > 0) {
-      MCSERVER.infoLog("Test", "测试未通过!");
-      process.exit(500);
-    }
+  MCSERVER.infoLog("Test", "测试过程结束...");
+  if (MCSERVER.allError > 0) {
+    MCSERVER.infoLog("Test", "测试未通过!");
+    process.exit(500);
+  } else {
     MCSERVER.infoLog("Test", "测试通过!");
     process.exit(0);
   }
@@ -89,6 +87,7 @@ setTimeout(() => {
 const fs = require("fs");
 
 // 全局仅限本地配置
+//#意思是加载配置文件吗？
 MCSERVER.localProperty = {};
 
 const tools = require("./core/tools");
@@ -96,10 +95,12 @@ const tools = require("./core/tools");
 // 生成第一次配置文件
 const INIT_CONFIG_PATH = "./model/init_config/";
 const PRO_CONFIG = "./property.js";
-if (!fs.existsSync(PRO_CONFIG)) tools.mCopyFileSync(INIT_CONFIG_PATH + "property.js", PRO_CONFIG);
+if (!fs.existsSync(PRO_CONFIG)){
+    tools.mCopyFileSync(INIT_CONFIG_PATH + "config.js", PRO_CONFIG);
+}
 
 // 加载配置
-require("./property");
+require("./config");
 
 const express = require("express");
 const session = require("express-session");

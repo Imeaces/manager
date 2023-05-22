@@ -35,7 +35,12 @@ class MCServStatus {
       client.on("data", (response) => {
         // Check the readme for a simple explanation
         var server_info = response.toString().split("\x00\x00");
-
+        
+        
+        if (server_info.length < 6 || server_info.find(v => v==null)){ //返回的数据无法识别，认定服务器不可用
+          reject(new Error("error data not valid"));
+        }
+        
         this.status = {
           host: this.host,
           port: this.port,
