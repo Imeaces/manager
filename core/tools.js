@@ -54,6 +54,7 @@ module.exports.autoLoadModule = (proPath, minePath, callback) => {
   }
 };
 
+//#这函数干嘛用的
 module.exports.mCopyFileSync = (oldpath, newpath) => {
   let resetData = fs.readFileSync(oldpath, {
     encoding: "UTF-8",

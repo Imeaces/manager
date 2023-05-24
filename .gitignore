@@ -15,9 +15,14 @@ public/*.json
 McserverConfig.json
 core/*.json
 public/common/URL.js
+config.json
 property.js
 
+# 上传目录
 tmp_upload/
+
+# 数据目录
+data/
 
 #vscode
 *.code-workspace
@@ -87,4 +92,5 @@ typings/
 # dotenv environment variables file
 .env
 
-start.bat
+# 可能的 用于启动某些东西的 脚本文件。
+start-?*.*

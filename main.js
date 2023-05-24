@@ -1,27 +1,3 @@
-/*
- * ==================================
- * Copyright(c) 2021 https://github.com/Suwings.
- * MIT Licensed
- *
- * 欢迎阅读:
- * 您现在看见的这份代码为 MCSManager 8.X 版本代码，此版本已是落后版本。
- * 您可以来此处了解最新版本：https://github.com/Suwings/MCSManager
- * 但这不代表此代码毫无价值，它依然有基本的功能。
- * 不过，这份代码将不再进行任何更新与维护，纵使发现漏洞缺陷，纵使拥有严重的错误缺陷，也不再修复。
- * 它的使命已经完成。现在，您可以压榨它的剩余价值，以便于更好的服务于您。
- * 或者，服务下一位，直到 Minecraft 消失，计算机换代更新，人类文明结束，它也许还会存在。
- *
- * 根据 MIT 开源协议发行:
- * 此软件源代码与相关文档对所有人免费，可以任意处置，包括使用，复制，修改，合并，发表，分发，再授权，或者销售。
- * 唯一的限制是，软件中必须包含版权说明和许可提示。
- *
- * 只适用于中国市场:
- * 本程序无英文版，有且只有中文版。
- *
- * 历史遗留:
- * 此程序源代码经历了 2013 年到 2021 年，代码中会有一些古老的语法与实现方式。
- * 某些地方如果您不知道为何这样写，那么切勿改动。
- */
  
 /*
  * @Silvigarabis 表示我看不懂，但我大受震撼
@@ -29,79 +5,51 @@
  * 然后得弄个面板方便管理
  * 我就把这个非常简单的面板翻出来了
  * 不过我也是懂一点js的人了，这不得改改符合我的想法？
+ 
+ 重命名 app.js -> main.js
  */
 
-// 算是个彩蛋？不过也太明显了吧
-// 如果参数里包含“--mcsm8”就打印旧版logo，然后程序爆炸
-if (Array.from(process.argv).includes("--mcsm8")){
-// 软件终端图标输出
-console.log(`______  _______________________  ___                                         
-___   |/  /_  ____/_  ___/__   |/  /_____ _____________ _______ _____________
-__  /|_/ /_  /    _____ \\__  /|_/ /_  __  /_  __ \\  __  /_  __  /  _ \\_  ___/
-_  /  / / / /___  ____/ /_  /  / / / /_/ /_  / / / /_/ /_  /_/ //  __/  /    
-/_/  /_/  \\____/  /____/ /_/  /_/  \\__,_/ /_/ /_/\\__,_/ _\\__, / \\___//_/     
-                                                        /____/             
- + Copyright Suwings All rights reserved.
- + Version 8.7 Final Edition
-`);
-throw new (class MCSM8FinalVersionError extends Error { constructor(){ super("MCSM8已经没了"); } })();
-} 
+//#用来记录各种东西
+const IMCMAN = {};
+// 全局变量 MCSERVER
+//#兼容还没改过来的代码
+global.MCSERVER = IMCMAN;
 
-console.log("manager for Imeaces");
+//#在这里解析参数
+resolveScriptArgs(Array.from(process.argv).slice(2));
 
-// 运行时环境检测
-try {
-  let nodejsMajorVersion = parseInt(process.version.match(/\d+/)[0]);
-  console.log(`当前正在使用的NODEJS主版本号为: ${nodejsMajorVersion}`);
-  // 尽管我们建议最低版本为 v10 版本
-  if (nodejsMajorVersion < 10) {
-    console.log("[ WARN ] 您的 Node 运行环境版本似乎低于我们要求的版本.");
-    console.log("[ WARN ] 可能会出现未知情况,建议您更新 Node 版本 (>=10.0.0)");
-  }
-} catch {
-  // 忽略任何版本检测导致的错误
-  console.log("无法确定当前使用的NODEJS版本");
+console.log("Manager for Imeaces");
+
+printVersionMessage();
+
+detectNodejsVersion();
+
+if (IMCMAN.configFile == null){
+    IMCMAN.configFile = "./config.json";
 }
 
-const IMCMAN = require("./core/variable").IMCMAN;
-// 全局变量 MCSERVER
-const MCSERVER = IMCMAN;
-global.MCSERVER = MCSERVER;
+//#导出运行数据变量
+require("./core/variable").IMCMAN = IMCMAN;
 
-process.exit();
+const { Config } = require("./config/config");
+if (Config.createDefaultConfig(IMCMAN.configFile)){
+    console.log("已写入默认配置到文件 "+IMCMAN.configFile);
+}
 
-// 自动化部署测试
-//#看上去是一个非常直接的测试，尽管我进行了简单的修改，但还是觉得太简单粗暴了
-if (Array.from(process.argv).includes("--test"))
-setTimeout(() => {
-  MCSERVER.infoLog("Test", "测试过程结束...");
-  if (MCSERVER.allError > 0) {
-    MCSERVER.infoLog("Test", "测试未通过!");
-    process.exit(500);
-  } else {
-    MCSERVER.infoLog("Test", "测试通过!");
-    process.exit(0);
-  }
-}, 10000);
+const fs = require("fs"); //是否应该将此类代码放到文件顶部？
 
-const fs = require("fs");
+// 读取配置
+IMCMAN.config = new Config(fs.readFileSync(IMCMAN.configFile, "utf8"));
+// 用于兼容尚未更改的读取配置的代码
+MCSERVER.localProperty = IMCMAN.config.toOldLocalProperties();
+MCSERVER.allError = 0;
 
-// 全局仅限本地配置
-//#意思是加载配置文件吗？
-MCSERVER.localProperty = {};
+//暂时没有意义的举动
+//IMCMAN.workDir = fs.realpathSync(process.cwd());
 
 const tools = require("./core/tools");
 
-// 生成第一次配置文件
-const INIT_CONFIG_PATH = "./model/init_config/";
-const PRO_CONFIG = "./property.js";
-if (!fs.existsSync(PRO_CONFIG)){
-    tools.mCopyFileSync(INIT_CONFIG_PATH + "config.js", PRO_CONFIG);
-}
-
-// 加载配置
-require("./config");
-
+//#都不认识，慢慢学吧
 const express = require("express");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -242,17 +190,6 @@ for (let key in routeList) {
   app.use("/" + name, require("./route/" + name));
 }
 
-process.on("uncaughtException", function (err) {
-  // 是否出过错误,本变量用于自动化测试
-  MCSERVER.allError++;
-  // 打印出错误
-  MCSERVER.error("错误报告:", err);
-});
-
-process.on("unhandledRejection", (reason, p) => {
-  MCSERVER.error("错误报告:", reason);
-});
-
 // 初始化目录结构环境
 (function initializationRun() {
   const USERS_PATH = "./users/";
@@ -346,3 +283,155 @@ NewsCenter.requestNews();
 
 // 程序退出信号处理
 require("./core/procexit");
+
+function execTestTimer(){
+    // 自动化部署测试
+    //#看上去是一个非常直接的测试，尽管我进行了简单的修改，但还是觉得太简单粗暴了
+    if (Array.from(process.argv).includes("--test")){
+        IMCMAN.isTesting = true;
+        settimeout(() => {
+          mcserver.infolog("test", "测试过程结束...");
+          if (mcserver.allerror > 0) {
+            mcserver.infolog("test", "测试未通过!");
+            process.exit(500);
+          } else {
+            mcserver.infolog("test", "测试通过!");
+            process.exit(0);
+          }
+        }, 10000);
+    }
+    
+}
+
+function mcsm8egg(){
+    //#算是个彩蛋？不过也太明显了吧
+    //#如果参数里包含“--mcsm8”就打印旧版logo，然后程序爆炸
+    class MCSM8FinalVersionError extends Error {
+        constructor(){
+            super("MCSM8已经没了");
+            
+        }
+    }
+    console.log(" * ==================================");
+    console.log(" * Copyright(c) 2021 https://github.com/Suwings.");
+    console.log(" * MIT Licensed");
+    console.log(" *");
+    console.log(" * 欢迎阅读:");
+    console.log(" * 您现在看见的这份代码为 MCSManager 8.X 版本代码，此版本已是落后版本。");
+    console.log(" * 您可以来此处了解最新版本：https://github.com/Suwings/MCSManager");
+    console.log(" * 但这不代表此代码毫无价值，它依然有基本的功能。");
+    console.log(" * 不过，这份代码将不再进行任何更新与维护，纵使发现漏洞缺陷，纵使拥有严重的错误缺陷，也不再修复。");
+    console.log(" * 它的使命已经完成。现在，您可以压榨它的剩余价值，以便于更好的服务于您。");
+    console.log(" * 或者，服务下一位，直到 Minecraft 消失，计算机换代更新，人类文明结束，它也许还会存在。");
+    console.log(" *");
+    console.log(" * 根据 MIT 开源协议发行:");
+    console.log(" * 此软件源代码与相关文档对所有人免费，可以任意处置，包括使用，复制，修改，合并，发表，分发，再授权，或者销售。");
+    console.log(" * 唯一的限制是，软件中必须包含版权说明和许可提示。");
+    console.log(" *");
+    console.log(" * 只适用于中国市场:");
+    console.log(" * 本程序无英文版，有且只有中文版。");
+    console.log(" *");
+    console.log(" * 历史遗留:");
+    console.log(" * 此程序源代码经历了 2013 年到 2021 年，代码中会有一些古老的语法与实现方式。");
+    console.log(" * 某些地方如果您不知道为何这样写，那么切勿改动。");
+
+    // 软件终端图标输出
+    //#改了，主要是为了让代码好看点
+    console.log("______  _______________________  ___                                         ");
+    console.log("___   |/  /_  ____/_  ___/__   |/  /_____ _____________ _______ _____________");
+    console.log("__  /|_/ /_  /    _____ \\__  /|_/ /_  __  /_  __ \\  __  /_  __  /  _ \\_  ___/");
+    console.log("_  /  / / / /___  ____/ /_  /  / / / /_/ /_  / / / /_/ /_  /_/ //  __/  /    ");
+    console.log("/_/  /_/  \\____/  /____/ /_/  /_/  \\__,_/ /_/ /_/\\__,_/ _\\__, / \\___//_/     ");
+    console.log("                                                        /____/             ");
+    console.log(" + Copyright Suwings All rights reserved.");
+    console.log(" + Version 8.7 Final Edition");
+    throw new MCSM8FinalVersionError();
+}
+
+function printHelpMessage(){
+    console.log("帮助信息正在编写……");
+}
+
+function printVersionMessage(){
+    console.log("IMCMAN 版本：0.1.0-还在开发");
+    console.log("MIT Licensed");
+    console.log("初始代码为 Suwings 的 MCSManager 版本 8.7 Final Edition，根据 MIT 协议获得授权");
+}
+
+function detectNodejsVersion(){
+    // 运行时环境检测
+    //#改了
+    try {
+        let nodejsMajorVersion = parseInt(process.version.match(/\d+/)[0]);
+        console.log(`当前正在使用的NODEJS主版本号为: ${nodejsMajorVersion}`);
+        // 尽管我们建议最低版本为 v10 版本
+        if (nodejsMajorVersion < 10) {
+            console.log("[ WARN ] 您的 Node 运行环境版本似乎低于我们要求的版本.");
+            console.log("[ WARN ] 可能会出现未知情况,建议您更新 Node 版本 (>=10.0.0)");
+        }
+    } catch {
+      // 忽略任何版本检测导致的错误
+      //#但是我非要输出一句话
+      console.log("无法确定当前使用的NODEJS版本");
+    }
+}
+
+function resolveScriptArgs(args){
+    const passedArgs = new Set();
+    const iterator = args.values();
+    let valueData = iterator.next();
+    let exitAfterResolvedArgv = false;
+    while (!valueData.done){
+        const arg = valueData.value;
+        
+        //没什么意义，防止你传相同的参数导致你理解不了你传了什么
+        if (passedArgs.has(arg)){
+            throw new Error("重复指定的参数: "+arg);
+        }
+        
+        switch (arg){
+            case "--mcsm8": //反正我喜欢这个
+                exitAfterResolvedArgv = true;
+                passedArgs.add(arg);
+                mcsm8egg();
+                break;
+            case "--conf":
+            case "--config": //我觉得可以
+                passedArgs.add(arg);
+                IMCMAN.configFile = iterator.next().value;
+                break;
+            case "--help":
+                exitAfterResolvedArgv = true;
+                printHelpMessage();
+                break;
+            case "--version":
+            case "--show-license":
+            case "--show-licence":
+                exitAfterResolvedArgv = true;
+                printVersionMessage();
+                break;
+            case "--test":
+                passedArgs.add(arg);
+                execTestTimer();
+                break;
+            default:
+                exitAfterResolvedArgv = 1;
+                console.log("未知的参数: "+arg);
+        }
+        
+        if (exitAfterResolvedArgv){
+            break;
+        }
+    
+        valueData = iterator.next();
+    }
+    
+    if (exitAfterResolvedArgv){
+        if ("number" === typeof exitAfterResolvedArgv){
+            process.exit(exitAfterResolvedArgv);
+        } else {
+            process.exit();
+        }
+    }
+
+}
